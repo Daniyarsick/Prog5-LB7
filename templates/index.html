@@ -6,34 +6,38 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.0/socket.io.min.js"></script>
 </head>
 <body>
-<h1>Выберите валюту для просмотра</h1>
+<h1>Ваш индекс клиента: <span id="clientId">Загрузка...</span></h1>
+<h2>Выберите валюту для просмотра</h2>
 <select id="currencySelect">
     <option value="USD">USD - Доллар США</option>
     <option value="EUR">EUR - Евро</option>
     <option value="GBP">GBP - Фунт стерлингов</option>
-
+    <!-- Добавьте здесь любые другие валюты, которые вы хотите предложить пользователю -->
 </select>
 <button onclick="selectCurrency()">Выбрать валюту</button>
 
 <h2>Текущий и предыдущий курсы:</h2>
 <div id="currencyRate">Выберите валюту, чтобы увидеть курс</div>
 
+
 <script>
     const socket = io();
 
+    // При подключении
     socket.on('connected', (data) => {
         console.log(`Клиент ${data.id} подключился`);
+        document.getElementById('clientId').innerText = data.id;  // Отображаем индекс клиента на странице
     });
 
-
+    // Обработка выбора валюты
     function selectCurrency() {
         const currencyCode = document.getElementById('currencySelect').value;
-        socket.emit('select_currency', {currency_code: currencyCode});
+        socket.emit('select_currency', { currency_code: currencyCode });
     }
 
-
+    // Получение обновлений по выбранной валюте
     socket.on('update', (data) => {
-        const {currency_code, current_rate, previous_rate} = data;
+        const { currency_code, current_rate, previous_rate } = data;
         let displayText = `Курс ${currency_code}: ${current_rate}`;
         if (previous_rate !== null) {
             displayText += ` (предыдущий: ${previous_rate})`;
@@ -41,7 +45,7 @@
         document.getElementById('currencyRate').innerText = displayText;
     });
 
-
+    // Подтверждение выбора валюты
     socket.on('currency_selected', (data) => {
         console.log(data.message);
         document.getElementById('currencyRate').innerText = `Ожидание обновления курса для ${data.message.split(' ')[2]}`;

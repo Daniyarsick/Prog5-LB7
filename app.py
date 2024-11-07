@@ -7,11 +7,10 @@ import time
 app = Flask(__name__)
 socketio = SocketIO(app)
 
-
+# Главная страница
 @app.route('/')
 def index():
     return render_template('index.html')
-
 
 class CurrencyObserver:
     def __init__(self):
@@ -32,14 +31,13 @@ class CurrencyObserver:
             currency_code = entry['currency']
             if currency_code in data['Valute']:
                 currency_info = data['Valute'][currency_code]
-
+                # Подготавливаем данные для отправки, включая текущий и предыдущий курс
                 currency_data = {
                     'currency_code': currency_code,
                     'current_rate': currency_info['Value'],
                     'previous_rate': currency_info['Previous']
                 }
                 observer.update(currency_data)
-
 
 class Client:
     def __init__(self, sid):
@@ -48,26 +46,22 @@ class Client:
     def update(self, data):
         socketio.emit('update', data, room=self.sid)
 
-
 def get_currency_rates():
     response = requests.get('https://www.cbr-xml-daily.ru/daily_json.js')
     return response.json()
-
 
 def currency_updater(observer):
     while True:
         data = get_currency_rates()
         observer.notify(data)
-        time.sleep(10)
-
+        time.sleep(60)  # Обновление каждые 60 секунд
 
 currency_observer = CurrencyObserver()
 
-
 @socketio.on('connect')
 def handle_connect():
-    emit('connected', {'message': 'Connected', 'id': request.sid})
-
+    sid = request.sid  # Получаем уникальный идентификатор клиента
+    emit('connected', {'message': 'Connected', 'id': sid})  # Отправляем его на клиент
 
 @socketio.on('select_currency')
 def handle_select_currency(data):
@@ -76,12 +70,10 @@ def handle_select_currency(data):
     currency_observer.register(client, currency_code)
     emit('currency_selected', {'message': f'You selected {currency_code}', 'id': request.sid})
 
-
 @socketio.on('disconnect')
 def handle_disconnect():
     client = Client(request.sid)
     currency_observer.unregister(client)
-
 
 if __name__ == "__main__":
     threading.Thread(target=currency_updater, args=(currency_observer,)).start()
