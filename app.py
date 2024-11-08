@@ -54,7 +54,7 @@ def currency_updater(observer):
     while True:
         data = get_currency_rates()
         observer.notify(data)
-        time.sleep(60)  # Обновление каждые 60 секунд
+        time.sleep(10) # Обновляем курсы валют каждые 10 секунд
 
 currency_observer = CurrencyObserver()
 
